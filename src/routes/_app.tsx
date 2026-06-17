@@ -7,13 +7,13 @@ export const Route = createFileRoute("/_app")({
   component: AppLayout,
 });
 
-const navItems = [
+const navItems: { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean }[] = [
   { to: "/", label: "대시보드", icon: LayoutDashboard, exact: true },
   { to: "/upload", label: "고객 업로드", icon: Upload },
   { to: "/customers", label: "이탈 고객", icon: Users },
   { to: "/outbox", label: "메시지 준비함", icon: Inbox },
   { to: "/settings", label: "설정", icon: Settings },
-] as const;
+];
 
 function AppLayout() {
   const { settings, lastUpload } = useStore();
