@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as AppUploadRouteImport } from './routes/_app.upload'
+import { Route as AppOutboxRouteImport } from './routes/_app.outbox'
 import { Route as AppCustomersIndexRouteImport } from './routes/_app.customers.index'
 import { Route as AppCustomersIdRouteImport } from './routes/_app.customers.$id'
 
@@ -29,6 +30,11 @@ const AppUploadRoute = AppUploadRouteImport.update({
   path: '/upload',
   getParentRoute: () => AppRoute,
 } as any)
+const AppOutboxRoute = AppOutboxRouteImport.update({
+  id: '/outbox',
+  path: '/outbox',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppCustomersIndexRoute = AppCustomersIndexRouteImport.update({
   id: '/customers/',
   path: '/customers/',
@@ -42,11 +48,13 @@ const AppCustomersIdRoute = AppCustomersIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
+  '/outbox': typeof AppOutboxRoute
   '/upload': typeof AppUploadRoute
   '/customers/$id': typeof AppCustomersIdRoute
   '/customers/': typeof AppCustomersIndexRoute
 }
 export interface FileRoutesByTo {
+  '/outbox': typeof AppOutboxRoute
   '/upload': typeof AppUploadRoute
   '/': typeof AppIndexRoute
   '/customers/$id': typeof AppCustomersIdRoute
@@ -55,6 +63,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
+  '/_app/outbox': typeof AppOutboxRoute
   '/_app/upload': typeof AppUploadRoute
   '/_app/': typeof AppIndexRoute
   '/_app/customers/$id': typeof AppCustomersIdRoute
@@ -62,12 +71,13 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/upload' | '/customers/$id' | '/customers/'
+  fullPaths: '/' | '/outbox' | '/upload' | '/customers/$id' | '/customers/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/upload' | '/' | '/customers/$id' | '/customers'
+  to: '/outbox' | '/upload' | '/' | '/customers/$id' | '/customers'
   id:
     | '__root__'
     | '/_app'
+    | '/_app/outbox'
     | '/_app/upload'
     | '/_app/'
     | '/_app/customers/$id'
@@ -101,6 +111,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppUploadRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/outbox': {
+      id: '/_app/outbox'
+      path: '/outbox'
+      fullPath: '/outbox'
+      preLoaderRoute: typeof AppOutboxRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/customers/': {
       id: '/_app/customers/'
       path: '/customers'
@@ -119,6 +136,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteChildren {
+  AppOutboxRoute: typeof AppOutboxRoute
   AppUploadRoute: typeof AppUploadRoute
   AppIndexRoute: typeof AppIndexRoute
   AppCustomersIdRoute: typeof AppCustomersIdRoute
@@ -126,6 +144,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppOutboxRoute: AppOutboxRoute,
   AppUploadRoute: AppUploadRoute,
   AppIndexRoute: AppIndexRoute,
   AppCustomersIdRoute: AppCustomersIdRoute,
