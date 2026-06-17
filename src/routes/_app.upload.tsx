@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import Papa from "papaparse";
+import * as XLSX from "xlsx";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -43,21 +44,51 @@ function UploadPage() {
   const [mapping, setMapping] = useState<Record<string, string>>({});
   const [fileName, setFileName] = useState("");
 
+  const applyParsedData = (h: string[], data: RowObj[], name: string) => {
+    setHeaders(h);
+    setRows(data);
+    setFileName(name);
+    const guess: Record<string, string> = {};
+    for (const r of REQUIRED) guess[r.key] = autoGuess(h, r.hints);
+    setMapping(guess);
+  };
+
   const handleFile = (file: File) => {
-    Papa.parse<RowObj>(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (res) => {
-        const h = res.meta.fields ?? [];
-        setHeaders(h);
-        setRows(res.data);
-        setFileName(file.name);
-        const guess: Record<string, string> = {};
-        for (const r of REQUIRED) guess[r.key] = autoGuess(h, r.hints);
-        setMapping(guess);
-      },
-      error: () => toast.error("파일을 읽지 못했어요. CSV 형식을 확인해 주세요."),
-    });
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    if (ext === "xlsx" || ext === "xls") {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target!.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: "array" });
+          const sheet = workbook.Sheets[workbook.SheetNames[0]];
+          const rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
+          if (rawRows.length === 0) {
+            toast.error("파일에 데이터가 없어요.");
+            return;
+          }
+          const h = Object.keys(rawRows[0]);
+          const rows: RowObj[] = rawRows.map((r) =>
+            Object.fromEntries(Object.entries(r).map(([k, v]) => [k, String(v)]))
+          );
+          applyParsedData(h, rows, file.name);
+        } catch {
+          toast.error("엑셀 파일을 읽지 못했어요. 파일 형식을 확인해 주세요.");
+        }
+      };
+      reader.onerror = () => toast.error("엑셀 파일을 읽지 못했어요. 파일 형식을 확인해 주세요.");
+      reader.readAsArrayBuffer(file);
+    } else {
+      Papa.parse<RowObj>(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (res) => {
+          const h = res.meta.fields ?? [];
+          applyParsedData(h, res.data, file.name);
+        },
+        error: () => toast.error("파일을 읽지 못했어요. CSV 형식을 확인해 주세요."),
+      });
+    }
   };
 
   const downloadSample = () => {
@@ -97,7 +128,7 @@ function UploadPage() {
       setCustomers(parsed);
       markUploaded();
       toast.success(`${parsed.length}명의 고객 데이터를 분석했어요.`);
-      navigate({ to: "/customers" });
+      navigate({ to: "/" });
     } catch {
       toast.error("데이터 변환 중 오류가 발생했어요.");
     }
@@ -125,8 +156,8 @@ function UploadPage() {
               }}
             >
               <Upload className="h-10 w-10 mx-auto text-muted-foreground" />
-              <p className="mt-3 font-medium">CSV 파일을 끌어다 놓거나 선택하세요</p>
-              <p className="text-xs text-muted-foreground mt-1">엑셀(.xlsx)은 CSV로 저장 후 업로드해 주세요.</p>
+              <p className="mt-3 font-medium">CSV 또는 엑셀 파일을 끌어다 놓거나 선택하세요</p>
+              <p className="text-xs text-muted-foreground mt-1">CSV, 엑셀(.xlsx, .xls) 파일을 지원합니다.</p>
               <div className="mt-5 flex items-center justify-center gap-2">
                 <Button onClick={() => fileInput.current?.click()}>
                   <FileSpreadsheet className="h-4 w-4" /> 파일 선택
@@ -139,7 +170,7 @@ function UploadPage() {
               <input
                 ref={fileInput}
                 type="file"
-                accept=".csv,text/csv"
+                accept=".csv,text/csv,.xlsx,.xls"
                 className="hidden"
                 onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
               />
