@@ -20,6 +20,12 @@ dist-ssr
 .wrangler/
 .dev.vars
 
+# Vercel
+.vercel
+
+# npm lockfile (이 프로젝트는 bun 사용)
+package-lock.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
